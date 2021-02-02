@@ -5,6 +5,7 @@ import Like from "./common/Like";
 import ListGroup from "./common/ListGroup";
 import Pagination from "./common/Pagination";
 import { paginate } from "./utils/paginate";
+import { filter } from "lodash";
 
 class Movies extends Component {
   state = {
@@ -15,7 +16,8 @@ class Movies extends Component {
   };
 
   componentDidMount() {
-    this.setState({ movies: getMovies(), genres: getGenres() });
+    const genres = [{name: 'All Genres'},...getGenres()]
+    this.setState({ movies: getMovies(), genres });
   }
 
   handleDelete = (movie) => {
@@ -38,30 +40,41 @@ class Movies extends Component {
     this.setState({ currentPage: page });
   };
 
-  handleGenreSelect = (genre) => {};
+  handleGenreSelect = (genre) => {
+    this.setState({ selectedGenre: genre, 
+      currentPage: 1
+    });
+  };
 
   render() {
     const { length: moviesCount } = this.state.movies;
-    const { pageSize, currentPage, movies: allMovies } = this.state;
+    const {
+      pageSize,
+      currentPage,
+      selectedGenre,
+      movies: allMovies,
+    } = this.state;
 
     if (moviesCount === 0) {
       return <p>There are no movies in the database</p>;
     }
 
-    const movies = paginate(allMovies, currentPage, pageSize);
+    const filtered = selectedGenre && selectedGenre._id
+      ? allMovies.filter((m) => m.genre._id === selectedGenre._id)
+      : allMovies;
+    const movies = paginate(filtered, currentPage, pageSize);
 
     return (
       <div className="row">
         <div className="col-2">
           <ListGroup
             items={this.state.genres}
-            textPropery="name"
-            valuePropery="_id"
+            selectedItem={this.state.selectedGenre}
             onItemSelect={this.handleGenreSelect}
           />
         </div>
         <div className="col">
-          <p>there are {moviesCount} movies in the database</p>
+          <p>there are {filtered.length} movies in the database</p>
           <table className="table">
             <thead>
               <tr>
@@ -100,7 +113,7 @@ class Movies extends Component {
             </tbody>
           </table>
           <Pagination
-            itemsCount={moviesCount}
+            itemsCount={filtered.length}
             pageSize={pageSize}
             onPageChange={this.handlePageChange}
             currentPage={currentPage}
